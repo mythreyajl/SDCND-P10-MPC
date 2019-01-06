@@ -9,6 +9,8 @@
 #include "Eigen-3.3/Eigen/QR"
 #include "MPC.h"
 
+using namespace std;
+
 // for convenience
 using json = nlohmann::json;
 
@@ -70,8 +72,9 @@ int main() {
 
   // MPC is initialized here!
   MPC mpc;
+  Eigen::VectorXd xvals(6), yvals(6);
 
-  h.onMessage([&mpc](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
+  h.onMessage([&mpc, &xvals, &yvals](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                      uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
@@ -91,13 +94,24 @@ int main() {
           double py = j[1]["y"];
           double psi = j[1]["psi"];
           double v = j[1]["speed"];
-
+          
           /*
           * TODO: Calculate steering angle and throttle using MPC.
           *
           * Both are in between [-1, 1].
           *
           */
+          
+          for(int i = 0; i < ptsx.size(); i++) {
+            xvals(i) = ptsx[i];
+            yvals(i) = ptsy[i];
+          }
+          
+          auto coeffs = polyfit(xvals, yvals, 3);
+          double cte = polyeval(coeffs, px) - py;
+          
+          std::cout << "Coeffs: [" << coeffs << "], CTE: " << cte << std::endl;
+          
           double steer_value;
           double throttle_value;
 
